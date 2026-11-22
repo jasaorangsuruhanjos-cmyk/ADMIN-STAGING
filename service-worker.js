@@ -1,0 +1,5 @@
+const CACHE_NAME='jos-admin-staging-v1';
+const APP_PATH='./index.html';
+self.addEventListener('install',event=>{event.waitUntil((async()=>{const c=await caches.open(CACHE_NAME);try{await c.add(APP_PATH)}catch(e){console.warn('Cache awal dilewati',e)}})());self.skipWaiting()});
+self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('jos-admin-staging-')&&k!==CACHE_NAME).map(k=>caches.delete(k)));await self.clients.claim()})())});
+self.addEventListener('fetch',event=>{const req=event.request;if(req.method!=='GET')return;const u=new URL(req.url);if(u.origin!==self.location.origin)return;event.respondWith((async()=>{try{const res=await fetch(req);if(res.ok&&res.type==='basic'){const c=await caches.open(CACHE_NAME);await c.put(req,res.clone())}return res}catch(e){const cached=await caches.match(req);if(cached)return cached;if(req.mode==='navigate'){const app=await caches.match(APP_PATH);if(app)return app}return new Response('JOS Admin Staging offline. Periksa koneksi internet.',{status:503,headers:{'Content-Type':'text/plain;charset=utf-8'}})}})())});
