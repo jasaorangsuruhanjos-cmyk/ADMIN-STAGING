@@ -238,6 +238,7 @@ body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;
   <div class="stat"><small>Total pelanggan</small><strong id="customerTotal">—</strong></div>
   <div class="stat"><small>Terdaftar hari ini</small><strong id="customerToday">—</strong></div>
   <div class="stat"><small>Aktif</small><strong id="customerActive">—</strong></div>
+  <div class="stat"><small>Belum terverifikasi</small><strong id="customerUnverified">—</strong></div>
   <div class="stat"><small>Nonaktif</small><strong id="customerInactive">—</strong></div>
  </div>
  <div class="field"><label>Cari pelanggan (nama, email, WhatsApp)</label><input id="customerSearch" type="search" placeholder="Ketik nama, email, atau nomor WhatsApp..." oninput="renderCustomerRows()"></div>
@@ -599,7 +600,8 @@ async function loadCustomers(){
   $('customerToday').textContent=Number(summary.registered_today||0).toLocaleString('id-ID');
   $('customerActive').textContent=Number(summary.active||0).toLocaleString('id-ID');
   $('customerInactive').textContent=Number(summary.inactive||0).toLocaleString('id-ID');
-  notice.textContent='Data akun JOS berhasil dimuat. Status Aktif/Nonaktif mengikuti status blokir akun pada Supabase Auth; akun yang statusnya tidak dapat diverifikasi tidak dimasukkan ke dua hitungan tersebut. Tidak login lama tidak otomatis dianggap nonaktif.';
+  $('customerUnverified').textContent=Number(summary.unverified||0).toLocaleString('id-ID');
+  notice.textContent='Data akun JOS berhasil dimuat. Status mengikuti verifikasi email dan status blokir Supabase Auth. Email belum dikonfirmasi ditandai Belum Terverifikasi, bukan Aktif. Akun terblokir ditandai Nonaktif.';
   renderCustomerRows();renderCustomerGrowth();
  }catch(e){
   notice.innerHTML='Data pelanggan belum dapat dimuat: <b>'+esc(e.message)+'</b><br><br>Pastikan Anda login menggunakan akun yang terdaftar pada <code>jos_admin_users</code>. Tidak ada data pelanggan yang diubah.';
@@ -612,7 +614,7 @@ function renderCustomerRows(){
  const rows=customerRows.filter(c=>[c.full_name,c.phone,c.email].some(v=>String(v||'').toLowerCase().includes(q)));
  box.innerHTML=rows.length?rows.map(c=>{
   const status=String(c.account_status||'Tidak diketahui');
-  const cls=status==='Aktif'?'badge green':status==='Nonaktif'?'badge red':'badge';
+  const cls=status==='Aktif'?'badge green':status==='Nonaktif'?'badge red':status==='Belum Terverifikasi'?'badge':'badge';
   return '<article class="item"><strong>'+esc(c.full_name||'Nama belum diisi')+'</strong> <span class="'+cls+'">'+esc(status)+'</span><div class="meta">WhatsApp: '+esc(c.phone||'-')+'<br>Email: '+esc(c.email||'-')+'<br>Tanggal daftar: '+esc(dt(c.created_at))+'<br>Sumber: JOS</div></article>';
  }).join(''):'<div class="empty">Tidak ada pelanggan yang cocok.</div>';
 }
