@@ -1532,7 +1532,7 @@ checkAdminSession();
 <script>
 if('serviceWorker' in navigator && location.protocol==='https:'){
 window.addEventListener('load',()=>{
-navigator.serviceWorker.register('./service-worker.js?v=jos-admin-app-v1',{scope:'./'})
+navigator.serviceWorker.register('./service-worker.js?v=jos-admin-staging-v2',{scope:'./'})
 .then(reg=>{
 console.log('JOS Admin PWA aktif:',reg.scope);
 })
