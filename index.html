@@ -372,7 +372,7 @@ body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;
 </div>
 
 <script>
-function initJosAdmin(){
+window.initJosAdmin = function(){
 const SUPABASE_URL='https://aqhfkcdglfijdtsgyzmq.supabase.co';
 const SUPABASE_KEY='sb_publishable_Ymh1RsVe9Ba9No27l58jGA_hpD04lSw';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -1509,7 +1509,7 @@ checkAdminSession();
     s.src=sources[index++];
     s.onload=function(){
       if(window.supabase&&typeof window.supabase.createClient==='function'){
-        try{initJosAdmin();}
+        try{window.initJosAdmin();}
         catch(e){
           const m=document.getElementById('loginMsg');
           if(m){m.textContent='Inisialisasi Admin gagal: '+(e&&e.message?e.message:String(e));m.classList.add('err');}
@@ -1589,7 +1589,7 @@ checkAdminSession();
 <script>
 if('serviceWorker' in navigator && location.protocol==='https:'){
 window.addEventListener('load',()=>{
-navigator.serviceWorker.register('./service-worker.js?v=jos-admin-staging-v5',{scope:'./'})
+navigator.serviceWorker.register('./service-worker.js?v=jos-admin-staging-v6',{scope:'./'})
 .then(reg=>{
 console.log('JOS Admin PWA aktif:',reg.scope);
 })
