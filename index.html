@@ -448,13 +448,19 @@ async function checkAdminSession(){
     return;
   }
 
-  // Verifikasi hak Admin melalui Edge Function server-side agar tidak bergantung pada SELECT RLS browser.
-  const {data:verifyData,error:verifyError} = await db.functions.invoke('jos-admin-customers',{body:{action:'verify'}});
-  if(verifyError || !verifyData?.authorized){
+  // Samakan pemeriksaan hak admin dengan portal produksi JOS.
+  // RLS pada jos_admin_users mengizinkan admin membaca baris miliknya sendiri.
+  const {data,error} = await db
+    .from('jos_admin_users')
+    .select('user_id')
+    .eq('user_id',session.user.id)
+    .maybeSingle();
+
+  if(error || !data){
     await db.auth.signOut();
     $('loginView').classList.remove('hidden');
     $('adminApp').classList.add('hidden');
-    msg('loginMsg',verifyData?.error || verifyError?.message || 'Akun ini tidak terdaftar sebagai Admin JOS.',true);
+    msg('loginMsg','Akun ini tidak terdaftar sebagai admin atau verifikasi akses gagal: '+(error?.message||'data admin tidak ditemukan'),true);
     return;
   }
 
