@@ -440,54 +440,78 @@ $(id).classList.toggle('err',error);
 }
 
 async function checkAdminSession(){
-  const {data:{session}} = await db.auth.getSession();
+  const loginView=$('loginView'), adminApp=$('adminApp');
+  try{
+    const {data:sessionData,error:sessionError}=await db.auth.getSession();
+    if(sessionError)throw new Error('Gagal membaca sesi: '+sessionError.message);
+    const session=sessionData?.session;
+    if(!session){
+      loginView.classList.remove('hidden');
+      adminApp.classList.add('hidden');
+      return {authorized:false,reason:'no_session'};
+    }
 
-  if(!session){
-    $('loginView').classList.remove('hidden');
-    $('adminApp').classList.add('hidden');
-    return;
+    const {data:userData,error:userError}=await db.auth.getUser(session.access_token);
+    if(userError||!userData?.user){
+      loginView.classList.remove('hidden');
+      adminApp.classList.add('hidden');
+      msg('loginMsg','Sesi login tidak valid: '+(userError?.message||'data pengguna tidak ditemukan')+'. Silakan login ulang.',true);
+      return {authorized:false,reason:'invalid_session'};
+    }
+
+    const {data,error}=await db.from('jos_admin_users')
+      .select('user_id').eq('user_id',userData.user.id).maybeSingle();
+
+    if(error){
+      loginView.classList.remove('hidden');
+      adminApp.classList.add('hidden');
+      msg('loginMsg','Login berhasil, tetapi pemeriksaan hak Admin gagal. Kode: '+(error.code||'-')+' • '+error.message,true);
+      console.error('JOS ADMIN MEMBERSHIP CHECK',error);
+      return {authorized:false,reason:'membership_query_error'};
+    }
+    if(!data){
+      loginView.classList.remove('hidden');
+      adminApp.classList.add('hidden');
+      msg('loginMsg','Email berhasil login, tetapi ID akun ini belum terdaftar di jos_admin_users. ID akun: '+userData.user.id+'. Jangan kirim password kepada siapa pun.',true);
+      return {authorized:false,reason:'not_admin'};
+    }
+
+    adminUser=userData.user;
+    $('adminEmail').textContent=userData.user.email||'Admin JOS';
+    loginView.classList.add('hidden');
+    adminApp.classList.remove('hidden');
+    initAdminNotifySettings();
+    startAdminBookingListener();
+    await refreshAll();
+    await loadOrders();
+    return {authorized:true};
+  }catch(err){
+    loginView.classList.remove('hidden');
+    adminApp.classList.add('hidden');
+    msg('loginMsg','Pemeriksaan login gagal: '+(err?.message||String(err)),true);
+    console.error('JOS ADMIN LOGIN CHECK',err);
+    return {authorized:false,reason:'unexpected_error'};
   }
-
-  // Samakan pemeriksaan hak admin dengan portal produksi JOS.
-  // RLS pada jos_admin_users mengizinkan admin membaca baris miliknya sendiri.
-  const {data,error} = await db
-    .from('jos_admin_users')
-    .select('user_id')
-    .eq('user_id',session.user.id)
-    .maybeSingle();
-
-  if(error || !data){
-    await db.auth.signOut();
-    $('loginView').classList.remove('hidden');
-    $('adminApp').classList.add('hidden');
-    msg('loginMsg','Akun ini tidak terdaftar sebagai admin atau verifikasi akses gagal: '+(error?.message||'data admin tidak ditemukan'),true);
-    return;
-  }
-
-  adminUser = session.user;
-  $('adminEmail').textContent = session.user.email || 'Admin JOS';
-  $('loginView').classList.add('hidden');
-  $('adminApp').classList.remove('hidden');
-
-  initAdminNotifySettings();
-  startAdminBookingListener();
-  await refreshAll();
-  await loadOrders();
 }
 
 $('loginForm').addEventListener('submit',async e=>{
-e.preventDefault();
-$('loginBtn').disabled=true;
-msg('loginMsg','Memeriksa akun...');
-try{
-const {error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
-if(error)throw error;
-await checkAdminSession();
-}catch(err){
-msg('loginMsg','Login gagal: '+err.message,true);
-}finally{
-$('loginBtn').disabled=false;
-}
+  e.preventDefault();
+  $('loginBtn').disabled=true;
+  msg('loginMsg','Memeriksa email dan password...');
+  try{
+    const {data,error}=await db.auth.signInWithPassword({
+      email:$('email').value.trim(),
+      password:$('password').value
+    });
+    if(error)throw error;
+    if(!data?.session)throw new Error('Login tidak menghasilkan sesi. Periksa pengaturan autentikasi Supabase.');
+    await checkAdminSession();
+  }catch(err){
+    msg('loginMsg','Login gagal: '+(err?.message||String(err)),true);
+    console.error('JOS ADMIN SIGN IN',err);
+  }finally{
+    $('loginBtn').disabled=false;
+  }
 });
 
 let activeHistorySource='jos';
