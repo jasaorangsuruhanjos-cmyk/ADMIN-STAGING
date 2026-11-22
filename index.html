@@ -371,8 +371,8 @@ body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;
  </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
+function initJosAdmin(){
 const SUPABASE_URL='https://aqhfkcdglfijdtsgyzmq.supabase.co';
 const SUPABASE_KEY='sb_publishable_Ymh1RsVe9Ba9No27l58jGA_hpD04lSw';
 const db=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
@@ -1489,8 +1489,40 @@ msg('loginMsg','Anda telah keluar.');
 
 
 checkAdminSession();
+}
 </script>
-
+<script>
+(function(){
+  const sources=[
+    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+    'https://unpkg.com/@supabase/supabase-js@2',
+    'https://cdnjs.cloudflare.com/ajax/libs/supabase/2.49.4/supabase.min.js'
+  ];
+  let index=0;
+  function loadNext(){
+    if(index>=sources.length){
+      const m=document.getElementById('loginMsg');
+      if(m){m.textContent='Tidak dapat memuat layanan login. CDN diblokir atau koneksi bermasalah. Coba Chrome dengan jaringan berbeda.';m.classList.add('err');}
+      return;
+    }
+    const s=document.createElement('script');
+    s.src=sources[index++];
+    s.onload=function(){
+      if(window.supabase&&typeof window.supabase.createClient==='function'){
+        try{initJosAdmin();}
+        catch(e){
+          const m=document.getElementById('loginMsg');
+          if(m){m.textContent='Inisialisasi Admin gagal: '+(e&&e.message?e.message:String(e));m.classList.add('err');}
+          console.error('JOS ADMIN INIT',e);
+        }
+      }else{ s.remove();loadNext(); }
+    };
+    s.onerror=function(){s.remove();loadNext();};
+    document.head.appendChild(s);
+  }
+  loadNext();
+})();
+</script>
 
 <!-- Popup pemasangan aplikasi JOS Admin -->
 <div class="jos-admin-install-popup" id="josAdminInstallPopup" role="dialog" aria-label="Instal aplikasi JOS Admin">
@@ -1557,7 +1589,7 @@ checkAdminSession();
 <script>
 if('serviceWorker' in navigator && location.protocol==='https:'){
 window.addEventListener('load',()=>{
-navigator.serviceWorker.register('./service-worker.js?v=jos-admin-staging-v4',{scope:'./'})
+navigator.serviceWorker.register('./service-worker.js?v=jos-admin-staging-v5',{scope:'./'})
 .then(reg=>{
 console.log('JOS Admin PWA aktif:',reg.scope);
 })
