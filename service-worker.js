@@ -1,4 +1,4 @@
-const CACHE_NAME='jos-admin-staging-v1';
+const CACHE_NAME='jos-admin-staging-v2';
 const APP_PATH='./index.html';
 self.addEventListener('install',event=>{event.waitUntil((async()=>{const c=await caches.open(CACHE_NAME);try{await c.add(APP_PATH)}catch(e){console.warn('Cache awal dilewati',e)}})());self.skipWaiting()});
 self.addEventListener('activate',event=>{event.waitUntil((async()=>{const keys=await caches.keys();await Promise.all(keys.filter(k=>k.startsWith('jos-admin-staging-')&&k!==CACHE_NAME).map(k=>caches.delete(k)));await self.clients.claim()})())});
