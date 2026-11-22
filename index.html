@@ -549,34 +549,44 @@ let customerLoaded=false;
 async function loadCustomers(){
  const notice=$('customerAccessNotice'), list=$('customerList');
  if(customerLoaded){renderCustomerRows();return;}
- notice.textContent='Memeriksa izin admin untuk membaca akun pelanggan...';
+ notice.textContent='Memuat data pelanggan melalui jalur Admin JOS yang aman...';
  try{
-  // Akses data pelanggan menggunakan tabel yang sudah ada. Tidak ada perubahan skema.
-  const [accountsResult,profilesResult]=await Promise.all([
-   db.from('customer_app_accounts').select('user_id,source_app,created_at').eq('source_app','JOS').order('created_at',{ascending:false}).limit(2000),
-   db.from('profiles').select('id,full_name,phone,created_at').order('created_at',{ascending:false}).limit(2000)
-  ]);
-  if(accountsResult.error)throw accountsResult.error;
-  if(profilesResult.error)throw profilesResult.error;
-  const profileMap=new Map((profilesResult.data||[]).map(p=>[String(p.id),p]));
-  customerRows=(accountsResult.data||[]).map(a=>({...a,...(profileMap.get(String(a.user_id))||{})}));
+  const {data,error}=await db.functions.invoke('jos-admin-customers',{body:{}});
+  if(error){
+   let detail=error.message||'Permintaan gagal';
+   try{
+    const response=error.context;
+    if(response&&typeof response.json==='function'){
+     const payload=await response.json();
+     detail=payload.detail||payload.error||detail;
+    }
+   }catch(_){}
+   throw new Error(detail);
+  }
+  if(!data||data.success!==true)throw new Error(data?.error||'Respons data pelanggan tidak valid.');
+  customerRows=Array.isArray(data.customers)?data.customers:[];
   customerLoaded=true;
-  notice.textContent='Data akun JOS berhasil dimuat. Status aktif/nonaktif hanya ditampilkan jika tersedia pada sumber data resmi.';
-  $('customerTotal').textContent=customerRows.length.toLocaleString('id-ID');
-  const today=new Date();const key=today.toLocaleDateString('en-CA');
-  $('customerToday').textContent=customerRows.filter(c=>String(c.created_at||'').slice(0,10)===key).length.toLocaleString('id-ID');
-  $('customerActive').textContent='—';$('customerInactive').textContent='—';
+  const summary=data.summary||{};
+  $('customerTotal').textContent=Number(summary.total??customerRows.length).toLocaleString('id-ID');
+  $('customerToday').textContent=Number(summary.registered_today||0).toLocaleString('id-ID');
+  $('customerActive').textContent=Number(summary.active||0).toLocaleString('id-ID');
+  $('customerInactive').textContent=Number(summary.inactive||0).toLocaleString('id-ID');
+  notice.textContent='Data akun JOS berhasil dimuat. Status Aktif/Nonaktif mengikuti status blokir akun pada Supabase Auth; akun yang statusnya tidak dapat diverifikasi tidak dimasukkan ke dua hitungan tersebut. Tidak login lama tidak otomatis dianggap nonaktif.';
   renderCustomerRows();renderCustomerGrowth();
  }catch(e){
-  notice.innerHTML='Akses data pelanggan belum diizinkan oleh Row Level Security Supabase: <b>'+esc(e.message)+'</b><br><br>Keamanan database saat ini hanya mengizinkan pelanggan membaca profil dan akun miliknya sendiri. Dashboard admin memerlukan jalur baca khusus yang memverifikasi akun pada <code>jos_admin_users</code>. Saya tidak mengubah kebijakan database produksi.';
-  list.innerHTML='<div class="empty">Data belum ditampilkan agar informasi pelanggan tetap terlindungi.</div>';
+  notice.innerHTML='Data pelanggan belum dapat dimuat: <b>'+esc(e.message)+'</b><br><br>Pastikan Anda login menggunakan akun yang terdaftar pada <code>jos_admin_users</code>. Tidak ada data pelanggan yang diubah.';
+  list.innerHTML='<div class="empty">Data belum ditampilkan karena verifikasi Admin atau pembacaan data gagal.</div>';
  }
 }
 function renderCustomerRows(){
  const box=$('customerList');if(!box)return;
  const q=String($('customerSearch')?.value||'').trim().toLowerCase();
  const rows=customerRows.filter(c=>[c.full_name,c.phone,c.email].some(v=>String(v||'').toLowerCase().includes(q)));
- box.innerHTML=rows.length?rows.map(c=>'<article class="item"><strong>'+esc(c.full_name||'Nama belum diisi')+'</strong><div class="meta">WhatsApp: '+esc(c.phone||'-')+'<br>Email: '+esc(c.email||'Tidak tersedia pada tabel profil')+'<br>Tanggal daftar: '+esc(dt(c.created_at))+'<br>Sumber: JOS</div></article>').join(''):'<div class="empty">Tidak ada pelanggan yang cocok.</div>';
+ box.innerHTML=rows.length?rows.map(c=>{
+  const status=String(c.account_status||'Tidak diketahui');
+  const cls=status==='Aktif'?'badge green':status==='Nonaktif'?'badge red':'badge';
+  return '<article class="item"><strong>'+esc(c.full_name||'Nama belum diisi')+'</strong> <span class="'+cls+'">'+esc(status)+'</span><div class="meta">WhatsApp: '+esc(c.phone||'-')+'<br>Email: '+esc(c.email||'-')+'<br>Tanggal daftar: '+esc(dt(c.created_at))+'<br>Sumber: JOS</div></article>';
+ }).join(''):'<div class="empty">Tidak ada pelanggan yang cocok.</div>';
 }
 function renderCustomerGrowth(){
  const box=$('customerGrowth');if(!customerRows.length){box.textContent='Belum ada data pertumbuhan untuk ditampilkan.';return;}
