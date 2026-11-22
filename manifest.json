@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "JOS Admin Staging",
+  "short_name": "JOS Admin",
+  "description": "Lingkungan uji coba Portal Admin JOS",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0759a8",
+  "icons": [
+    {"src":"https://raw.githubusercontent.com/jasaorangsuruhanjos-cmyk/-JOS-ADMIN/main/jos-admin-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"https://raw.githubusercontent.com/jasaorangsuruhanjos-cmyk/-JOS-ADMIN/main/jos-admin-512.png","sizes":"512x512","type":"image/png"}
+  ]
+}
