@@ -371,33 +371,7 @@ body{margin:0;background:var(--bg);font-family:Inter,system-ui,Arial,sans-serif;
  </div>
 </div>
 
-<script>
-(function loadJosSupabase(){
-  const sources=[
-    'https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js',
-    'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js',
-    'https://cdnjs.cloudflare.com/ajax/libs/supabase/2.49.4/supabase.min.js'
-  ];
-  let index=0;
-  function next(){
-    if(index>=sources.length){
-      window.__josSupabaseLoadFailed=true;
-      const m=document.getElementById('loginMsg');
-      if(m){m.textContent='Library login gagal dimuat dari jaringan. Coba buka melalui Chrome atau periksa koneksi.';m.classList.add('err');}
-      return;
-    }
-    const script=document.createElement('script');
-    script.src=sources[index++];
-    script.onload=()=>{
-      if(window.supabase?.createClient){window.__josSupabaseLoaded=true;}
-      else{script.remove();next();}
-    };
-    script.onerror=()=>{script.remove();next();};
-    document.head.appendChild(script);
-  }
-  next();
-})();
-</script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 const SUPABASE_URL='https://aqhfkcdglfijdtsgyzmq.supabase.co';
 const SUPABASE_KEY='sb_publishable_Ymh1RsVe9Ba9No27l58jGA_hpD04lSw';
