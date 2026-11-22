@@ -448,18 +448,13 @@ async function checkAdminSession(){
     return;
   }
 
-  // Tabel jos_admin_users hanya menggunakan kolom user_id dan created_at.
-  const {data,error} = await db
-    .from('jos_admin_users')
-    .select('user_id')
-    .eq('user_id',session.user.id)
-    .maybeSingle();
-
-  if(error || !data){
+  // Verifikasi hak Admin melalui Edge Function server-side agar tidak bergantung pada SELECT RLS browser.
+  const {data:verifyData,error:verifyError} = await db.functions.invoke('jos-admin-customers',{body:{action:'verify'}});
+  if(verifyError || !verifyData?.authorized){
     await db.auth.signOut();
     $('loginView').classList.remove('hidden');
     $('adminApp').classList.add('hidden');
-    msg('loginMsg','Akun ini tidak terdaftar sebagai admin.',true);
+    msg('loginMsg',verifyData?.error || verifyError?.message || 'Akun ini tidak terdaftar sebagai Admin JOS.',true);
     return;
   }
 
