@@ -548,12 +548,14 @@ history:['Riwayat Pesanan',''],
 manage:['Kelola Mitra',''],
 affiliate:['Manajemen Affiliate JOS','Persetujuan pendaftaran dan pengelolaan affiliate.'],
 reports:['Laporan',''],
-customers:['Manajemen Pelanggan','Pantau akun, pendaftaran, dan riwayat pelanggan JOS.'],\naccount:['Akun Admin','']
+customers:['Manajemen Pelanggan','Pantau akun, pendaftaran, dan riwayat pelanggan JOS.'],
+account:['Akun Admin','']
 };
 $('pageHeading').textContent=titles[name][0];
 $('pageSubheading').textContent=titles[name][1];
 if(name==='history'){switchHistorySource(activeHistorySource);}
-if(name==='manage')loadMitra();\nif(name==='customers')loadCustomers();
+if(name==='manage')loadMitra();
+if(name==='customers')loadCustomers();
 if(name==='affiliate')loadAffiliates();
 if(name==='reports')switchReportSource(activeReportSource);
 if(name==='account'){hideAccountSettings();}
